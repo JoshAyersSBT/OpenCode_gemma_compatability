@@ -8,7 +8,41 @@ This kit does three things:
 - Switches `~/.config/opencode/opencode.json` between Ollama and llama.cpp providers.
 - Starts a standalone `llama-server` on a side port for speed testing without stopping Ollama.
 
-## Quick Start: Ollama
+## Ordered Setup
+
+Choose a Gemma 4 size: `12b`, `26b`, or `31b`.
+
+### Windows PowerShell
+
+Use Ollama:
+
+```powershell
+.\scripts\Invoke-OpenCodeLocalSetup.ps1 -Backend ollama -ModelSize 12b -PullIfMissing
+```
+
+Use llama.cpp:
+
+```powershell
+.\scripts\Invoke-OpenCodeLocalSetup.ps1 -Backend llamacpp -ModelSize 12b -PullIfMissing -InstallLlamaCpp
+```
+
+### Pop!_OS / Linux
+
+Use Ollama:
+
+```bash
+./linux/run-opencode-local-setup.sh --backend ollama --size 12b --pull-if-missing
+```
+
+Use llama.cpp:
+
+```bash
+./linux/run-opencode-local-setup.sh --backend llamacpp --size 12b --pull-if-missing --install-llamacpp
+```
+
+The ordered setup runs the required steps in sequence: create the Ollama opencode variant, configure opencode, and when `llamacpp` is selected, install/start/test llama.cpp before pointing opencode at it.
+
+## Manual Setup: Ollama
 
 ### Windows PowerShell
 
@@ -38,7 +72,7 @@ Point opencode at Ollama using that variant:
 ./linux/set-opencode-local-provider.sh --backend ollama --size 12b
 ```
 
-## Quick Start: llama.cpp
+## Manual Setup: llama.cpp
 
 ### Windows PowerShell
 
@@ -106,6 +140,7 @@ Stop only the standalone llama.cpp server started by this kit:
 
 ## Notes
 
+- For the normal path, run `Invoke-OpenCodeLocalSetup.ps1` on Windows or `run-opencode-local-setup.sh` on Linux. The individual scripts remain available for manual setup or debugging.
 - The scripts support Gemma 4 `12b`, `26b`, and `31b` through `-ModelSize` on Windows or `--size` on Linux. Exact model names can still be overridden with `-BaseModel`, `-VariantName`, `-OllamaModel`, `-LlamaCppModel`, `--base`, `--variant`, `--ollama-model`, or `--llamacpp-model`.
 - The 12B Ollama model pulled during setup was already `Q4_K_M`.
 - Ollama's OpenAI-compatible endpoint ignored request-level `num_ctx` overrides on this machine, so the context fix is baked into an Ollama variant via `PARAMETER num_ctx 32768`.
