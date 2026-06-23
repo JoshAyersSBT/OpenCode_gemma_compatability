@@ -1,5 +1,8 @@
 param(
-  [string]$BaseModel = "gemma4:12b",
+  [ValidateSet("12b", "26b", "31b")]
+  [string]$ModelSize = "12b",
+  [string]$BaseModel,
+  [string]$ModelAlias,
   [int]$Port = 11436,
   [int]$ContextSize = 32768,
   [int]$Parallel = 1,
@@ -9,6 +12,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $BaseModel) {
+  $BaseModel = "gemma4:$ModelSize"
+}
+if (-not $ModelAlias) {
+  $ModelAlias = "gemma4-$ModelSize-q4km-llamacpp"
+}
 
 function Find-LlamaServer {
   $cmd = Get-Command llama-server -ErrorAction SilentlyContinue
@@ -59,6 +69,7 @@ $args = @(
   "--host", "127.0.0.1",
   "--port", "$Port",
   "--model", $modelPath,
+  "--alias", $ModelAlias,
   "--ctx-size", "$ContextSize",
   "--parallel", "$Parallel",
   "--gpu-layers", "auto",
@@ -93,8 +104,8 @@ for ($i = 0; $i -lt 90; $i++) {
   Url = "http://127.0.0.1:$Port"
   OpenAIBaseUrl = "http://127.0.0.1:$Port/v1"
   Server = $server
+  ModelAlias = $ModelAlias
   ModelPath = $modelPath
   Stdout = $stdout
   Stderr = $stderr
 }
-

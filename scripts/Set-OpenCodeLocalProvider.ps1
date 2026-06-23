@@ -1,13 +1,32 @@
 param(
   [ValidateSet("ollama", "llamacpp")]
   [string]$Backend = "ollama",
-  [string]$OllamaModel = "gemma4-opencode:12b",
-  [string]$LlamaCppModel = "gemma4-12b-q4km-llamacpp",
+  [ValidateSet("12b", "26b", "31b")]
+  [string]$ModelSize = "12b",
+  [string]$OllamaModel,
+  [string]$LlamaCppModel,
   [int]$LlamaCppPort = 11436,
   [string]$ConfigPath = (Join-Path $env:USERPROFILE ".config\opencode\opencode.json")
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $OllamaModel) {
+  $OllamaModel = "gemma4-opencode:$ModelSize"
+}
+if (-not $LlamaCppModel) {
+  $LlamaCppModel = "gemma4-$ModelSize-q4km-llamacpp"
+}
+
+function Add-Model {
+  param(
+    [System.Collections.Specialized.OrderedDictionary]$Models,
+    [string]$Name
+  )
+  if (-not $Models.Contains($Name)) {
+    $Models[$Name] = [ordered]@{ name = $Name }
+  }
+}
 
 $configDir = Split-Path -Parent $ConfigPath
 New-Item -ItemType Directory -Force -Path $configDir | Out-Null
@@ -18,6 +37,19 @@ if (Test-Path -LiteralPath $ConfigPath) {
 }
 
 $model = if ($Backend -eq "ollama") { "ollama/$OllamaModel" } else { "llamacpp/$LlamaCppModel" }
+$ollamaModels = [ordered]@{}
+foreach ($size in @("12b", "26b", "31b")) {
+  Add-Model $ollamaModels "gemma4-opencode:$size"
+  Add-Model $ollamaModels "gemma4:$size"
+}
+Add-Model $ollamaModels $OllamaModel
+Add-Model $ollamaModels "gpt-oss:20b"
+
+$llamaCppModels = [ordered]@{}
+foreach ($size in @("12b", "26b", "31b")) {
+  Add-Model $llamaCppModels "gemma4-$size-q4km-llamacpp"
+}
+Add-Model $llamaCppModels $LlamaCppModel
 
 $config = [ordered]@{
   '$schema' = "https://opencode.ai/config.json"
@@ -28,13 +60,7 @@ $config = [ordered]@{
       options = [ordered]@{
         baseURL = "http://127.0.0.1:11434/v1"
       }
-      models = [ordered]@{
-        $OllamaModel = [ordered]@{ name = $OllamaModel }
-        "gemma4-opencode:26b" = [ordered]@{ name = "gemma4-opencode:26b" }
-        "gemma4:12b" = [ordered]@{ name = "gemma4:12b" }
-        "gemma4:26b" = [ordered]@{ name = "gemma4:26b" }
-        "gpt-oss:20b" = [ordered]@{ name = "gpt-oss:20b" }
-      }
+      models = $ollamaModels
     }
     llamacpp = [ordered]@{
       npm = "@ai-sdk/openai-compatible"
@@ -42,9 +68,7 @@ $config = [ordered]@{
       options = [ordered]@{
         baseURL = "http://127.0.0.1:$LlamaCppPort/v1"
       }
-      models = [ordered]@{
-        $LlamaCppModel = [ordered]@{ name = $LlamaCppModel }
-      }
+      models = $llamaCppModels
     }
   }
   model = $model
@@ -52,4 +76,3 @@ $config = [ordered]@{
 
 $config | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $ConfigPath -NoNewline
 Get-Content -Raw -LiteralPath $ConfigPath
-

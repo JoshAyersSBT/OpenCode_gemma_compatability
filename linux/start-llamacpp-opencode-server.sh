@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-base="gemma4:12b"
+model_size="12b"
+base=""
 port="11436"
 ctx="32768"
 parallel="1"
 reasoning="off"
-model_alias="gemma4-12b-q4km-llamacpp"
+model_alias=""
 server="${LLAMA_SERVER:-}"
 kit_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 log_dir="$kit_root/logs"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --size) model_size="$2"; shift 2 ;;
     --base) base="$2"; shift 2 ;;
     --port) port="$2"; shift 2 ;;
     --ctx) ctx="$2"; shift 2 ;;
@@ -23,6 +25,14 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
+
+case "$model_size" in
+  12b|26b|31b) ;;
+  *) echo "--size must be one of: 12b, 26b, 31b." >&2; exit 2 ;;
+esac
+
+base="${base:-gemma4:$model_size}"
+model_alias="${model_alias:-gemma4-$model_size-q4km-llamacpp}"
 
 if [[ -z "$server" ]]; then
   server="$(command -v llama-server || true)"
@@ -110,4 +120,3 @@ if [[ "$ready" != "true" ]]; then
   tail -80 "$stderr" >&2 || true
   exit 1
 fi
-

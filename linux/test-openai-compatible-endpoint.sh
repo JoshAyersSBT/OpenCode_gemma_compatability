@@ -2,19 +2,28 @@
 set -euo pipefail
 
 base_url="http://127.0.0.1:11436/v1"
-model="gemma4-12b-q4km-llamacpp"
+model_size="12b"
+model=""
 prompt="Reply with exactly: local model ready"
 max_tokens="64"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --base-url) base_url="$2"; shift 2 ;;
+    --size) model_size="$2"; shift 2 ;;
     --model) model="$2"; shift 2 ;;
     --prompt) prompt="$2"; shift 2 ;;
     --max-tokens) max_tokens="$2"; shift 2 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
+
+case "$model_size" in
+  12b|26b|31b) ;;
+  *) echo "--size must be one of: 12b, 26b, 31b." >&2; exit 2 ;;
+esac
+
+model="${model:-gemma4-$model_size-q4km-llamacpp}"
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
@@ -40,4 +49,3 @@ curl -fsS \
   python3 -m json.tool
 end="$(date +%s)"
 echo "elapsed_seconds=$((end - start))"
-

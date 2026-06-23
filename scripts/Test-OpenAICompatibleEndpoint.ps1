@@ -1,11 +1,17 @@
 param(
   [string]$BaseUrl = "http://127.0.0.1:11436/v1",
-  [string]$Model = "gemma4-12b-q4km-llamacpp",
+  [ValidateSet("12b", "26b", "31b")]
+  [string]$ModelSize = "12b",
+  [string]$Model,
   [string]$Prompt = "Reply with exactly: local model ready",
   [int]$MaxTokens = 64
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $Model) {
+  $Model = "gemma4-$ModelSize-q4km-llamacpp"
+}
 
 $body = @{
   model = $Model
@@ -31,4 +37,3 @@ $sw.Stop()
   Reasoning = $response.choices[0].message.reasoning_content
   Usage = ($response.usage | ConvertTo-Json -Compress)
 }
-

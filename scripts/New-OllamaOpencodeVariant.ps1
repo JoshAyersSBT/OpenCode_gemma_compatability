@@ -1,11 +1,20 @@
 param(
-  [string]$BaseModel = "gemma4:12b",
-  [string]$VariantName = "gemma4-opencode:12b",
+  [ValidateSet("12b", "26b", "31b")]
+  [string]$ModelSize = "12b",
+  [string]$BaseModel,
+  [string]$VariantName,
   [int]$NumCtx = 32768,
   [switch]$PullIfMissing
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $BaseModel) {
+  $BaseModel = "gemma4:$ModelSize"
+}
+if (-not $VariantName) {
+  $VariantName = "gemma4-opencode:$ModelSize"
+}
 
 function Test-OllamaModel {
   param([string]$Name)
@@ -28,4 +37,3 @@ PARAMETER num_ctx $NumCtx
 
 ollama create $VariantName -f $modelfile
 ollama show $VariantName --parameters
-
